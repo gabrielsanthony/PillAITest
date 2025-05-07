@@ -1,5 +1,6 @@
 import streamlit as st
 import openai
+import time
 
 st.set_page_config(page_title="Pill-AI", page_icon="💊")
 
@@ -28,13 +29,17 @@ if user_input:
         assistant_id=ASSISTANT_ID
     )
 
-    with st.spinner("Pill-AI is thinking..."):
-        while True:
-            run_status = openai.beta.threads.runs.retrieve(
-                run.id, thread_id=st.session_state.thread_id
-            )
-            if run_status.status == "completed":
-                break
+   with st.spinner("Pill-AI is thinking..."):
+    while True:
+        run_status = openai.beta.threads.runs.retrieve(
+            run.id, thread_id=st.session_state.thread_id
+        )
+        if run_status.status == "completed":
+            break
+        elif run_status.status == "failed":
+            st.error("Assistant failed to respond.")
+            break
+        time.sleep(1.5)  # ← prevents excessive polling and hangs
 
     messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
     reply = messages.data[0].content[0].text.value
