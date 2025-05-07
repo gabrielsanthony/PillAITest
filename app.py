@@ -29,30 +29,30 @@ if user_input:
         assistant_id=ASSISTANT_ID
     )
 
-   with st.spinner("Pill-AI is thinking..."):
-    max_wait_time = 60  # seconds
-    start_time = time.time()
+    with st.spinner("Pill-AI is thinking..."):
+        max_wait_time = 60  # seconds
+        start_time = time.time()
 
-    while True:
-        run_status = openai.beta.threads.runs.retrieve(
-            run.id, thread_id=st.session_state.thread_id
-        )
+        while True:
+            run_status = openai.beta.threads.runs.retrieve(
+                run.id, thread_id=st.session_state.thread_id
+            )
 
-        # Log current status
-        st.write(f"Run status: {run_status.status}")
+            # Log current status
+            st.write(f"Run status: {run_status.status}")
 
-        if run_status.status == "completed":
-            break
-        elif run_status.status == "failed":
-            st.error("❌ Assistant failed to respond. Please try again.")
-            st.stop()
-        elif time.time() - start_time > max_wait_time:
-            st.error("⏱️ Timeout: Assistant took too long to respond.")
-            st.stop()
+            if run_status.status == "completed":
+                break
+            elif run_status.status == "failed":
+                st.error("❌ Assistant failed to respond. Please try again.")
+                st.stop()
+            elif time.time() - start_time > max_wait_time:
+                st.error("⏱️ Timeout: Assistant took too long to respond.")
+                st.stop()
 
-        time.sleep(2)  # avoid hammering the API
+            time.sleep(2)  # avoid hammering the API
 
-    messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
-    reply = messages.data[0].content[0].text.value
-    st.chat_message("assistant").write(reply)
+        messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+        reply = messages.data[0].content[0].text.value
+        st.chat_message("assistant").write(reply)
 
