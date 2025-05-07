@@ -4,7 +4,7 @@ import openai
 st.set_page_config(page_title="Pill-AI", page_icon="💊")
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_your_assistant_id"  # REPLACE THIS
+ASSISTANT_ID = "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"  # REPLACE THIS
 
 st.image("pillai_logo.png", width=100)
 st.markdown("<h1 style='text-align:center; color:#FF6600;'>💊 Pill-AI</h1>", unsafe_allow_html=True)
