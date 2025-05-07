@@ -18,4 +18,25 @@ if user_input:
     st.chat_message("user").write(user_input)
 
     openai.beta.threads.messages.create(
-        thread_id=_
+        thread_id=st.session_state.thread_id,
+        role="user",
+        content=user_input
+    )
+
+    run = openai.beta.threads.runs.create(
+        thread_id=st.session_state.thread_id,
+        assistant_id=ASSISTANT_ID
+    )
+
+    with st.spinner("Pill-AI is thinking..."):
+        while True:
+            run_status = openai.beta.threads.runs.retrieve(
+                run.id, thread_id=st.session_state.thread_id
+            )
+            if run_status.status == "completed":
+                break
+
+    messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+    reply = messages.data[0].content[0].text.value
+    st.chat_message("assistant").write(reply)
+
