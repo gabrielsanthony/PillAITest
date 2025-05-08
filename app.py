@@ -1,8 +1,8 @@
 import streamlit as st
 import openai
 import time
+import re  # ✅ Add this
 from openai import OpenAIError
-import re
 
 
 # Page setup
