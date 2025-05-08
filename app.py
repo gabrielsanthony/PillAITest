@@ -61,10 +61,15 @@ if user_input:
             
             # Show assistant response
             messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
-            for msg in reversed(messages.data):
-                if msg.role == "assistant":
-                    clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', msg.content[0].text.value)
-                    st.chat_message("assistant").write(clean_text.strip())
+for msg in reversed(messages.data):
+    if msg.role == "assistant":
+        if msg.content and hasattr(msg.content[0], "text"):
+            raw_text = msg.content[0].text.value
+        else:
+            raw_text = msg.content[0].value  # Fallback for plain messages
+
+        clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', raw_text)
+        st.chat_message("assistant").write(clean_text.strip())
 
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
