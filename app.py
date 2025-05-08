@@ -4,7 +4,7 @@ import time
 from openai import OpenAIError
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_XXXXXXX"  # Replace with your real assistant ID
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your real assistant ID
 
 # Create thread once
 if "thread_id" not in st.session_state:
