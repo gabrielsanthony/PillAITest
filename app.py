@@ -66,4 +66,4 @@ if user_input:
 
 # Optional footer/disclaimer
 st.markdown("---")
-st.info("ℹ️ Pill-AI is not a substitute for professional medical advice. Always consult your doctor.")
+st.info("ℹ️ Pill-AI is not a substitute for professional medical advice. Always consult your local Pharmacist.")
