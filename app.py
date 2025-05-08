@@ -1,27 +1,22 @@
-import streamlit as st
 import openai
+import streamlit as st
 import time
 from openai import OpenAIError
 
-st.set_page_config(page_title="Pill-AI", page_icon="💊")
-
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # REPLACE THIS
+ASSISTANT_ID = "asst_XXXXXXX"  # Replace with your real assistant ID
 
-st.image("pillai_logo.png", width=100)
-st.markdown("<h1 style='text-align:center; color:#FF6600;'>💊 Pill-AI</h1>", unsafe_allow_html=True)
-
-# Step 1: Create a thread if not already created
+# Create thread once
 if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Step 2: Capture user input
 user_input = st.chat_input("Ask about a medicine...")
 if user_input:
     st.chat_message("user").write(user_input)
 
- try:
+    try:
+        # Add message to thread
         openai.beta.threads.messages.create(
             thread_id=st.session_state.thread_id,
             role="user",
@@ -39,15 +34,19 @@ if user_input:
                     thread_id=st.session_state.thread_id,
                     run_id=run.id
                 )
+                st.write(f"🔄 Run status: `{run.status}`")
+
                 if run.status == "completed":
                     break
                 elif run.status in ["failed", "cancelled", "expired"]:
-                    st.error(f"❌ Run failed: {run.status}")
+                    st.error(f"❌ Run failed: `{run.status}`")
                     if run.last_error:
-                        st.error(run.last_error)
+                        st.error(f"🔍 Error details: {run.last_error}")
                     st.stop()
+
                 time.sleep(1)
 
+            # Display assistant reply
             messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
             for msg in reversed(messages.data):
                 if msg.role == "assistant":
