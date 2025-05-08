@@ -37,22 +37,22 @@ if user_input:
                 thread_id=st.session_state.thread_id
             )
 
-            for _ in range(30):
-                run = openai.beta.threads.runs.retrieve(
-                    thread_id=st.session_state.thread_id,
-                    run_id=run.id
-                )
-                st.write(f"🔄 Run status: `{run.status}`")
+           # Wait quietly until run is complete or fails
+for _ in range(30):
+    run = openai.beta.threads.runs.retrieve(
+        thread_id=st.session_state.thread_id,
+        run_id=run.id
+    )
 
-                if run.status == "completed":
-                    break
-                elif run.status in ["failed", "cancelled", "expired"]:
-                    st.error(f"❌ Run failed: `{run.status}`")
-                    if run.last_error:
-                        st.error(f"🔍 Error details: {run.last_error}")
-                    st.stop()
+    if run.status == "completed":
+        break
+    elif run.status in ["failed", "cancelled", "expired"]:
+        st.error(f"❌ Run failed: `{run.status}`")
+        if run.last_error:
+            st.error(f"🔍 Error details: {run.last_error}")
+        st.stop()
 
-                time.sleep(1)
+    time.sleep(1)
 
             # Display assistant reply
             messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
