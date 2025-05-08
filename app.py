@@ -31,9 +31,20 @@ st.markdown("""
 # Logo (optional)
 st.image("pillai_logo.png", width=100)
 
-# Add microphone button for speech-to-text input
+# Mic input using browser's SpeechRecognition API
 components.html("""
-<button onclick="startDictation()">🎤 Speak</button>
+<div style="margin-bottom: 10px;">
+  <button onclick="startDictation()" style="
+    font-size: 18px;
+    background-color: #FF6600;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    color: white;
+    cursor: pointer;">
+    🎤 Speak
+  </button>
+</div>
 <script>
 function startDictation() {
   var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -48,7 +59,7 @@ function startDictation() {
   recognition.start();
 }
 </script>
-""", height=50)
+""", height=100)
 
 # OpenAI API setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
