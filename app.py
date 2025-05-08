@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import time
+from openai import OpenAIError
 
 st.set_page_config(page_title="Pill-AI", page_icon="💊")
 
@@ -20,45 +21,38 @@ user_input = st.chat_input("Ask about a medicine...")
 if user_input:
     st.chat_message("user").write(user_input)
 
-    openai.beta.threads.messages.create(
-        thread_id=st.session_state.thread_id,
-        role="user",
-        content=user_input
-    )
-
-        # Add message to thread
-    run = openai.beta.threads.runs.create(
-        thread_id=st.session_state.thread_id,
-        assistant_id=ASSISTANT_ID
-    )
-
-        # Run assistant
-    with st.spinner("Pill-AI is thinking..."):
-        run = openai.beta.threads.runs.create(
-            assistant_id=ASSISTANT_ID,
-            thread_id=st.session_state.thread_id
+ try:
+        openai.beta.threads.messages.create(
+            thread_id=st.session_state.thread_id,
+            role="user",
+            content=user_input
         )
 
-        # Poll status
-        for _ in range(30):
-            run = openai.beta.threads.runs.retrieve(
-                thread_id=st.session_state.thread_id,
-                run_id=run.id
+        with st.spinner("Pill-AI is thinking..."):
+            run = openai.beta.threads.runs.create(
+                assistant_id=ASSISTANT_ID,
+                thread_id=st.session_state.thread_id
             )
-            st.write(f"🔄 Run status: `{run.status}`")
 
-            if run.status == "completed":
-                break
-            elif run.status in ["failed", "cancelled", "expired"]:
-                st.error(f"❌ Assistant run failed: `{run.status}`")
-                if run.last_error:
-                    st.error(f"🔍 Error details: {run.last_error}")
-                st.stop()
+            for _ in range(30):
+                run = openai.beta.threads.runs.retrieve(
+                    thread_id=st.session_state.thread_id,
+                    run_id=run.id
+                )
+                if run.status == "completed":
+                    break
+                elif run.status in ["failed", "cancelled", "expired"]:
+                    st.error(f"❌ Run failed: {run.status}")
+                    if run.last_error:
+                        st.error(run.last_error)
+                    st.stop()
+                time.sleep(1)
 
-            time.sleep(1)
+            messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+            for msg in reversed(messages.data):
+                if msg.role == "assistant":
+                    st.chat_message("assistant").write(msg.content[0].text.value)
 
-        # If successful, display messages
-        messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
-        for msg in reversed(messages.data):  # oldest to newest
-            if msg.role == "assistant":
-                st.chat_message("assistant").write(msg.content[0].text.value)
+    except OpenAIError as e:
+        st.error("⚠️ OpenAI API error occurred.")
+        st.exception(e)
