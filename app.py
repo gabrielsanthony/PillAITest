@@ -2,6 +2,8 @@ import streamlit as st
 import openai
 import time
 from openai import OpenAIError
+import re
+
 
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊")
@@ -54,11 +56,15 @@ if user_input:
                     st.stop()
                 time.sleep(1)
 
+            # Clean citations like  
+            clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', msg.content[0].text.value)
+            
             # Show assistant response
             messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
             for msg in reversed(messages.data):
                 if msg.role == "assistant":
-                    st.chat_message("assistant").write(msg.content[0].text.value)
+                    clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', msg.content[0].text.value)
+                    st.chat_message("assistant").write(clean_text.strip())
 
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
