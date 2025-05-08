@@ -26,55 +26,51 @@ user_input = st.chat_input("Ask about a medicine...")
 if user_input:
     st.chat_message("user").write(user_input)
 
-    try:
-        # Add user message to the thread
-        openai.beta.threads.messages.create(
-            thread_id=st.session_state.thread_id,
-            role="user",
-            content=user_input
+   try:
+    # Run logic...
+    openai.beta.threads.messages.create(
+        thread_id=st.session_state.thread_id,
+        role="user",
+        content=user_input
+    )
+
+    with st.spinner("Pill-AI is thinking..."):
+        run = openai.beta.threads.runs.create(
+            assistant_id=ASSISTANT_ID,
+            thread_id=st.session_state.thread_id
         )
 
-        with st.spinner("Pill-AI is thinking..."):
-            run = openai.beta.threads.runs.create(
-                assistant_id=ASSISTANT_ID,
-                thread_id=st.session_state.thread_id
+        for _ in range(30):
+            run = openai.beta.threads.runs.retrieve(
+                thread_id=st.session_state.thread_id,
+                run_id=run.id
             )
+            if run.status == "completed":
+                st.success("✅ Pill-AI has responded.")
+                break
+            elif run.status in ["failed", "cancelled", "expired"]:
+                st.error(f"❌ Run failed: `{run.status}`")
+                if run.last_error:
+                    st.error(f"🔍 Error: {run.last_error}")
+                st.stop()
+            time.sleep(1)
 
-            # Wait for completion
-            for _ in range(30):
-                run = openai.beta.threads.runs.retrieve(
-                    thread_id=st.session_state.thread_id,
-                    run_id=run.id
-                )
-                if run.status == "completed":
-                    st.success("✅ Pill-AI has responded.")
-                    break
-                elif run.status in ["failed", "cancelled", "expired"]:
-                    st.error(f"❌ Run failed: `{run.status}`")
-                    if run.last_error:
-                        st.error(f"🔍 Error: {run.last_error}")
-                    st.stop()
-                time.sleep(1)
+    # ✅ RESPONSE HANDLING HERE
+    messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+    for msg in reversed(messages.data):
+        if msg.role == "assistant":
+            if msg.content and hasattr(msg.content[0], "text"):
+                raw_text = msg.content[0].text.value
+            else:
+                raw_text = msg.content[0].value  # Fallback for plain responses
 
-            # Clean citations like  
-            clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', msg.content[0].text.value)
-            
-            # Show assistant response
-            messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
-for msg in reversed(messages.data):
-    if msg.role == "assistant":
-        if msg.content and hasattr(msg.content[0], "text"):
-            raw_text = msg.content[0].text.value
-        else:
-            raw_text = msg.content[0].value  # Fallback for plain messages
+            clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', raw_text)
+            st.chat_message("assistant").write(clean_text.strip())
 
-        clean_text = re.sub(r'【\d+:\d+†[^】]+】', '', raw_text)
-        st.chat_message("assistant").write(clean_text.strip())
-
-    except OpenAIError as e:
-        st.error("⚠️ OpenAI API error occurred.")
-        st.exception(e)
-
+except OpenAIError as e:
+    st.error("⚠️ OpenAI API error occurred.")
+    st.exception(e)
+    
 # Optional footer/disclaimer
 st.markdown("---")
 st.info("ℹ️ Pill-AI is not a substitute for professional medical advice. Always consult your local Pharmacist.")
