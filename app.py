@@ -3,6 +3,14 @@ import streamlit as st
 import time
 from openai import OpenAIError
 
+# Page settings
+st.set_page_config(page_title="Pill-AI", page_icon="💊")
+
+# Logo and Title
+st.image("pillai_logo.png", width=100)  # Make sure this file exists
+st.markdown("<h1 style='text-align:center; color:#FF6600;'>💊 Pill-AI</h1>", unsafe_allow_html=True)
+
+
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your real assistant ID
 
