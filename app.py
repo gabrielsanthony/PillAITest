@@ -12,7 +12,7 @@ st.markdown("<h1 style='text-align:center; color:#FF6600;'>💊 Pill-AI</h1>", u
 
 # OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_XXXXXXX"  # Replace with your actual Assistant ID
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your actual Assistant ID
 
 # Thread creation
 if "thread_id" not in st.session_state:
