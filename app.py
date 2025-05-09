@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# App header
+# Header
 st.markdown("""
 <div style='
     background-color: #FF6600;
@@ -27,25 +27,34 @@ st.markdown("""
 # Logo
 st.image("pillai_logo.png", width=100)
 
-# Hidden speech input field
+# Hidden speech capture input
 spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
 
-# Microphone button
+# Speak button (hold to speak, release to submit)
 components.html("""
-<button onclick="startDictation()" style="
+<style>
+#voice-button {
   font-size: 18px;
   background-color: #FF6600;
   border: none;
   padding: 10px 20px;
   border-radius: 30px;
   color: white;
-  cursor: pointer;">
-  🎤 Speak
-</button>
+  cursor: pointer;
+}
+</style>
+
+<button id="voice-button">🎤 Hold to Speak</button>
+
 <script>
-function startDictation() {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+let recognition;
+const button = document.getElementById("voice-button");
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
+
   recognition.onresult = function(event) {
     const transcript = event.results[0][0].transcript;
     const iframe = window.parent.document.querySelector("iframe");
@@ -54,18 +63,25 @@ function startDictation() {
     if (inputBox) {
       inputBox.value = transcript;
       inputBox.dispatchEvent(new Event("input", { bubbles: true }));
+      inputBox.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     }
   };
-  recognition.start();
+
+  recognition.onerror = function(event) {
+    alert("Speech recognition error: " + event.error);
+  };
+
+  button.onmousedown = () => recognition.start();
+  button.onmouseup = () => recognition.stop();
 }
 </script>
-""", height=120)
+""", height=150)
 
 # OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your actual Assistant ID
 
-# Create thread
+# Create a thread if it doesn't exist
 if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
@@ -73,11 +89,12 @@ if "thread_id" not in st.session_state:
 # Chat input
 user_input = st.chat_input("Ask about a medicine...")
 
-# Use spoken input if typed input is empty
+# If nothing typed but voice input detected
 if not user_input and spoken_input:
     user_input = spoken_input
     st.session_state["speech_capture"] = ""
 
+# Run assistant if input exists
 if user_input:
     st.chat_message("user").write(user_input)
 
@@ -137,6 +154,6 @@ if user_input:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# Footer disclaimer
+# Disclaimer
 st.markdown("---")
 st.info("ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.")
