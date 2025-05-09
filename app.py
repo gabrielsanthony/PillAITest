@@ -28,56 +28,56 @@ st.markdown("""
 st.image("pillai_logo.png", width=100)
 
 # Hidden speech input field
-spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
+#spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
 
-# Mic button (press to speak)
-components.html("""
-<style>
-#voice-button {
-  font-size: 18px;
-  background-color: #FF6600;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 30px;
-  color: white;
-  cursor: pointer;
-}
-</style>
+# HIDDEN Mic button (press to speak)
+#components.html("""
+#<style>
+##voice-button {
+#  font-size: 18px;
+#  background-color: #FF6600;
+#  border: none;
+#  padding: 10px 20px;
+#  border-radius: 30px;
+ # color: white;
+#  cursor: pointer;
+#}
+#</style>
 
-<button id="voice-button">🎤 Press to Speak</button>
+#<button id="voice-button">🎤 Press to Speak</button>
 
-<script>
-let recognition;
-const button = document.getElementById("voice-button");
+#<script>
+#let recognition;
+#const button = document.getElementById("voice-button");
 
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+#if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+#  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+#  recognition = new SpeechRecognition();
+#  recognition.lang = 'en-US';
+#  recognition.interimResults = false;
+# recognition.maxAlternatives = 1;
 
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    const iframe = window.parent.document.querySelector("iframe");
-    if (!iframe) return;
-    const inputBox = iframe.contentWindow.document.querySelector('input[data-testid="stTextInput"]');
-    if (inputBox) {
-      inputBox.value = transcript;
-      inputBox.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  };
+#  recognition.onresult = function(event) {
+#    const transcript = event.results[0][0].transcript;
+#    const iframe = window.parent.document.querySelector("iframe");
+#    if (!iframe) return;
+#    const inputBox = iframe.contentWindow.document.querySelector('input[data-testid="stTextInput"]');
+ #   if (inputBox) {
+ #     inputBox.value = transcript;
+  #    inputBox.dispatchEvent(new Event("input", { bubbles: true }));
+#    }
+#  };
+#
+#  recognition.onerror = function(event) {
+#    alert("Speech recognition error: " + event.error);
+#  };
+#
+ # button.onclick = () => recognition.start();
+#}
+#</script>
+#""", height=150)
 
-  recognition.onerror = function(event) {
-    alert("Speech recognition error: " + event.error);
-  };
-
-  button.onclick = () => recognition.start();
-}
-</script>
-""", height=150)
-
-st.caption("🗣️ Press to speak, then press Send to submit.")
+#st.caption("🗣️ Press to speak, then press Send to submit.")
 
 # OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
@@ -96,9 +96,9 @@ send = st.button("📤 Send")
 final_input = None
 if send:
     final_input = st.session_state["manual_input"]
-elif spoken_input and not st.session_state["manual_input"]:
-    final_input = spoken_input
-    st.session_state["speech_capture"] = ""
+#elif spoken_input and not st.session_state["manual_input"]:
+#    final_input = spoken_input
+  #  st.session_state["speech_capture"] = ""
 
 # Run assistant logic
 if final_input:
