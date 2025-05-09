@@ -5,7 +5,7 @@ import re
 from openai import OpenAIError
 import streamlit.components.v1 as components
 
-# Page config for mobile feel
+# Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
 # App header bar
@@ -27,10 +27,10 @@ st.markdown("""
 # Logo
 st.image("pillai_logo.png", width=100)
 
-# Hidden field to receive spoken text
+# Hidden speech-to-text input
 spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
 
-# Mic button with voice-to-text
+# Microphone button (injects transcript into hidden field)
 components.html("""
 <button onclick="startDictation()" style="
   font-size: 18px;
@@ -70,9 +70,15 @@ if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Combined input: either typed or from mic
-user_input = st.chat_input("Ask about a medicine...", value=spoken_input)
+# User input: chat box with speech fallback
+user_input = st.chat_input("Ask about a medicine...")
 
+# If nothing typed but speech was captured
+if not user_input and spoken_input:
+    user_input = spoken_input
+    st.session_state["speech_capture"] = ""  # clear after use
+
+# Handle query
 if user_input:
     st.chat_message("user").write(user_input)
 
@@ -104,7 +110,7 @@ if user_input:
                     st.stop()
                 time.sleep(1)
 
-        # Fetch assistant response
+        # Display assistant response
         messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
         for msg in reversed(messages.data):
             if msg.role == "assistant":
@@ -112,10 +118,12 @@ if user_input:
                     raw_text = msg.content[0].text.value
                 else:
                     raw_text = msg.content[0].value
+
+                # Clean up citations
                 clean_text = re.sub(r'【\\d+:\\d+†[^】]+】', '', raw_text)
                 st.chat_message("assistant").write(clean_text.strip())
 
-                # Voice output (assistant reads answer)
+                # Voice output: assistant speaks reply
                 components.html(f"""
                 <script>
                     var msg = new SpeechSynthesisUtterance("{clean_text.strip()}");
@@ -123,13 +131,11 @@ if user_input:
                 </script>
                 """, height=0)
 
-        # Optional: clear spoken input after use
-        st.session_state["speech_capture"] = ""
-
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# Disclaimer
+# Footer disclaimer
 st.markdown("---")
 st.info("ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.")
+
