@@ -30,7 +30,7 @@ st.image("pillai_logo.png", width=100)
 # Hidden speech input field
 spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
 
-# Mic button (press once to speak)
+# Mic button (press to speak)
 components.html("""
 <style>
 #voice-button {
@@ -79,7 +79,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
 
 st.caption("🗣️ Press to speak, then press Send to submit.")
 
-# OpenAI API setup
+# OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
@@ -88,11 +88,11 @@ if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Text input + visible Send button
+# Input field and Send button
 user_input = st.text_input("Ask about a medicine...", key="manual_input")
 send = st.button("📤 Send")
 
-# Choose final input source
+# Determine final input source
 final_input = None
 if send:
     final_input = st.session_state["manual_input"]
@@ -100,7 +100,7 @@ elif spoken_input and not st.session_state["manual_input"]:
     final_input = spoken_input
     st.session_state["speech_capture"] = ""
 
-# Run assistant
+# Run assistant logic
 if final_input:
     st.chat_message("user").write(final_input)
 
@@ -129,3 +129,37 @@ if final_input:
                     st.error(f"❌ Run failed: `{run.status}`")
                     if run.last_error:
                         st.error(f"🔍 Error: {run.last_error}")
+                    st.stop()
+                time.sleep(1)
+            else:
+                st.error("⏱️ Assistant took too long to respond. Please try again.")
+                st.stop()
+
+        # Display assistant response
+        messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+        found_response = False
+        for msg in reversed(messages.data):
+            if msg.role == "assistant":
+                found_response = True
+                raw_text = getattr(msg.content[0], "text", msg.content[0]).value
+                clean_text = re.sub(r'【\\d+:\\d+†[^】]+】', '', raw_text)
+                st.chat_message("assistant").write(clean_text.strip())
+
+                # Voice output
+                components.html(f"""
+                <script>
+                    var msg = new SpeechSynthesisUtterance("{clean_text.strip()}");
+                    window.speechSynthesis.speak(msg);
+                </script>
+                """, height=0)
+
+        if not found_response:
+            st.warning("🤖 Assistant completed, but no message was returned.")
+
+    except OpenAIError as e:
+        st.error("⚠️ OpenAI API error occurred.")
+        st.exception(e)
+
+# Footer disclaimer
+st.markdown("---")
+st.info("ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.")
