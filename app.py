@@ -5,14 +5,10 @@ import re
 from openai import OpenAIError
 import streamlit.components.v1 as components
 
-# Page config for mobile
-st.set_page_config(
-    page_title="Pill-AI",
-    page_icon="💊",
-    layout="centered"
-)
+# Page config for mobile feel
+st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Mobile-like app bar
+# App header bar
 st.markdown("""
 <div style='
     background-color: #FF6600;
@@ -28,50 +24,55 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Logo (optional)
+# Logo
 st.image("pillai_logo.png", width=100)
 
-# Mic input using browser's SpeechRecognition API
+# Hidden field to receive spoken text
+spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
+
+# Mic button with voice-to-text
 components.html("""
-<div style="margin-bottom: 10px;">
-  <button onclick="startDictation()" style="
-    font-size: 18px;
-    background-color: #FF6600;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 30px;
-    color: white;
-    cursor: pointer;">
-    🎤 Speak
-  </button>
-</div>
+<button onclick="startDictation()" style="
+  font-size: 18px;
+  background-color: #FF6600;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  color: white;
+  cursor: pointer;">
+  🎤 Speak
+</button>
 <script>
 function startDictation() {
-  var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   recognition.lang = 'en-US';
   recognition.onresult = function(event) {
     const transcript = event.results[0][0].transcript;
-    const inputBox = window.parent.document.querySelector('input[type="text"]');
-    const inputEvent = new Event('input', { bubbles: true });
-    inputBox.value = transcript;
-    inputBox.dispatchEvent(inputEvent);
+    const iframe = window.parent.document.querySelector("iframe");
+    if (!iframe) return;
+    const inputBox = iframe.contentWindow.document.querySelector('input[data-testid="stTextInput"]');
+    if (inputBox) {
+      inputBox.value = transcript;
+      inputBox.dispatchEvent(new Event("input", { bubbles: true }));
+    }
   };
   recognition.start();
 }
 </script>
-""", height=100)
+""", height=120)
 
-# OpenAI API setup
+# OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your real assistant ID
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your actual Assistant ID
 
 # Thread setup
 if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Chat input
-user_input = st.chat_input("Ask about a medicine...")
+# Combined input: either typed or from mic
+user_input = st.chat_input("Ask about a medicine...", value=spoken_input)
+
 if user_input:
     st.chat_message("user").write(user_input)
 
@@ -103,7 +104,7 @@ if user_input:
                     st.stop()
                 time.sleep(1)
 
-        # Display assistant response
+        # Fetch assistant response
         messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
         for msg in reversed(messages.data):
             if msg.role == "assistant":
@@ -114,7 +115,7 @@ if user_input:
                 clean_text = re.sub(r'【\\d+:\\d+†[^】]+】', '', raw_text)
                 st.chat_message("assistant").write(clean_text.strip())
 
-                # Speak the assistant's reply using browser TTS
+                # Voice output (assistant reads answer)
                 components.html(f"""
                 <script>
                     var msg = new SpeechSynthesisUtterance("{clean_text.strip()}");
@@ -122,10 +123,13 @@ if user_input:
                 </script>
                 """, height=0)
 
+        # Optional: clear spoken input after use
+        st.session_state["speech_capture"] = ""
+
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# Footer disclaimer
+# Disclaimer
 st.markdown("---")
 st.info("ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.")
