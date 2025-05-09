@@ -30,7 +30,7 @@ st.image("pillai_logo.png", width=100)
 # Hidden speech capture input
 spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
 
-# Speak button (hold to speak, release to submit)
+# Speak button (hold to speak, release to fill input)
 components.html("""
 <style>
 #voice-button {
@@ -63,7 +63,6 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     if (inputBox) {
       inputBox.value = transcript;
       inputBox.dispatchEvent(new Event("input", { bubbles: true }));
-      inputBox.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     }
   };
 
@@ -77,9 +76,12 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
 </script>
 """, height=150)
 
+# Add user instruction
+st.caption("ℹ️ After speaking, tap the input box and press Enter to submit.")
+
 # OpenAI setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # Replace with your actual Assistant ID
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
 # Create a thread if it doesn't exist
 if "thread_id" not in st.session_state:
@@ -89,7 +91,7 @@ if "thread_id" not in st.session_state:
 # Chat input
 user_input = st.chat_input("Ask about a medicine...")
 
-# If nothing typed but voice input detected
+# Use speech if nothing typed
 if not user_input and spoken_input:
     user_input = spoken_input
     st.session_state["speech_capture"] = ""
