@@ -128,4 +128,4 @@ if final_input:
                 elif run.status in ["failed", "cancelled", "expired"]:
                     st.error(f"❌ Run failed: `{run.status}`")
                     if run.last_error:
-                        st.error(f"🔍 Error: {run.last_error_
+                        st.error(f"🔍 Error: {run.last_error}")
