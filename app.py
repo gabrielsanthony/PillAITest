@@ -8,14 +8,12 @@ import streamlit.components.v1 as components
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Centered Logo as Header
-st.markdown("""
-<div style='text-align: center; margin-bottom: 20px;'>
-    <img src="pillai_logo.png" width="180">
-</div>
-""", unsafe_allow_html=True)
+# ✅ Centered Logo at the Top
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.image("pillai_logo.png", width=180)
 
-# Center Content Block for Mobile
+# ✅ Center All Content
 st.markdown("<div style='max-width: 600px; margin: auto;'>", unsafe_allow_html=True)
 
 # OpenAI Setup
@@ -27,7 +25,7 @@ if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Input field with character limit
+# ✅ Full-width Input Field and Button
 user_input = st.text_input(
     "Ask about a medicine...",
     key="manual_input",
@@ -36,16 +34,16 @@ user_input = st.text_input(
 )
 send = st.button("📤 Send", use_container_width=True)
 
-# Start Over Button
+# ✅ Clear Chat Button
 if st.button("🔄 Start Over", use_container_width=True):
     st.session_state.clear()
     st.experimental_rerun()
 
-# Character limit enforcement
+# ✅ Character Limit Enforcement
 if send and len(user_input) > 300:
     st.warning("⚠️ Please limit your question to 300 characters.")
 elif send and user_input:
-    # User Message Bubble
+    # ✅ User Chat Bubble
     st.markdown(f"""
     <div style='
         background-color: #FF6600;
@@ -90,7 +88,7 @@ elif send and user_input:
                 st.error("⏱️ Assistant took too long to respond. Please try again.")
                 st.stop()
 
-        # Display assistant response
+        # ✅ Display Assistant Response in Bubble
         messages = openai.beta.threads.messages.list(thread_id=st.session_state.thread_id)
         found_response = False
         for msg in reversed(messages.data):
@@ -99,7 +97,6 @@ elif send and user_input:
                 raw_text = getattr(msg.content[0], "text", msg.content[0]).value
                 clean_text = re.sub(r'【\\d+:\\d+†[^】]+】', '', raw_text)
 
-                # Assistant Message Bubble
                 st.markdown(f"""
                 <div style='
                     background-color: #F1F1F1;
@@ -112,7 +109,7 @@ elif send and user_input:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Optional voice output
+                # ✅ Optional Voice Output
                 components.html(f"""
                 <script>
                     var msg = new SpeechSynthesisUtterance("{clean_text.strip()}");
@@ -123,14 +120,14 @@ elif send and user_input:
         if not found_response:
             st.warning("🤖 Assistant completed, but no message was returned.")
 
-        # Auto-scroll to bottom
+        # ✅ Auto-scroll to bottom
         components.html("<script>window.scrollTo(0, document.body.scrollHeight);</script>", height=0)
 
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# Sticky Footer Disclaimer
+# ✅ Sticky Footer Disclaimer
 st.markdown("""
 <style>
 .sticky-footer {
@@ -148,5 +145,5 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Close the centered content block
+# ✅ Close Centered Content Block
 st.markdown("</div>", unsafe_allow_html=True)
