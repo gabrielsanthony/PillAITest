@@ -3,7 +3,6 @@ import openai
 import time
 import re
 from openai import OpenAIError
-import streamlit.components.v1 as components
 
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
@@ -24,30 +23,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Hidden speech input field
-spoken_input = st.text_input("Speech input", key="speech_capture", label_visibility="collapsed")
-
-# Mic button (press to speak)
-components.html("""
-    <style>
-        #voice-button {
-            font-size: 18px;
-            background-color: #FF6600;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 12px;
-            color: white;
-            cursor: pointer;
-        }
-    </style>
-    <button id="voice-button" onclick="startRecording()">🎤 Press to Speak</button>
-    <script>
-        function startRecording() {
-            alert("Voice recording not implemented in this demo.");
-        }
-    </script>
-""", height=100)
-
 # User input
 user_question = st.text_input("Type your question here:")
 
@@ -58,7 +33,7 @@ if st.button("Send"):
     else:
         with st.spinner("Processing..."):
             try:
-                # Simulate API response for demo purposes
+                # Example simulated response - replace with OpenAI API call as needed
                 answer = "You're taking metformin ."
 
                 # Remove source references like  
