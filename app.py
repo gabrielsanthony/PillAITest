@@ -5,24 +5,15 @@ from openai import OpenAIError
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Header with optional background
+# ✅ Centered, Larger Logo
 st.markdown("""
-<div style='
-    background-color: #FF6600;
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    color: white;
-    margin-bottom: 20px;
-'>
+<div style='text-align: center; margin-bottom: 20px;'>
+    <img src="https://your-image-url-or-filename.png" width="200"/>
 </div>
 """, unsafe_allow_html=True)
 
-# ✅ Option 1: If you uploaded "pillai_logo.png" via Streamlit Cloud Manage Files
-st.image("pillai_logo.png", width=100)
-
-# ✅ Option 2: Use a public image URL (uncomment and replace the URL if needed)
-# st.image("https://upload.wikimedia.org/wikipedia/commons/4/4f/OpenAI_Logo.svg", width=100)
+# ✅ Example using uploaded file (if using Streamlit Cloud Manage Files)
+# st.image("pillai_logo.png", width=200)
 
 # User input field
 user_question = st.text_input("Type your question here:")
@@ -37,10 +28,10 @@ if st.button("Send"):
                 # Example API response (replace with your actual OpenAI API call)
                 answer = "You're taking metformin ."
 
-                # Remove any source references
+                # Remove source references
                 cleaned_answer = re.sub(r'【\d+:\d+†[^\】]+】', '', answer)
 
-                # Display the result
+                # Display result
                 st.write(cleaned_answer)
 
             except OpenAIError as e:
