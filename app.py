@@ -5,7 +5,7 @@ from openai import OpenAIError
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Header styling
+# Header with optional background
 st.markdown("""
 <div style='
     background-color: #FF6600;
@@ -18,10 +18,13 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Display the uploaded logo (replace the filename with your uploaded file name)
-st.image("1c9f6e6b-1414-4bf9-9591-70d89bdab95e.png", width=100)
+# ✅ Option 1: If you uploaded "pillai_logo.png" via Streamlit Cloud Manage Files
+st.image("pillai_logo.png", width=100)
 
-# User input
+# ✅ Option 2: Use a public image URL (uncomment and replace the URL if needed)
+# st.image("https://upload.wikimedia.org/wikipedia/commons/4/4f/OpenAI_Logo.svg", width=100)
+
+# User input field
 user_question = st.text_input("Type your question here:")
 
 # Process button
@@ -31,11 +34,13 @@ if st.button("Send"):
     else:
         with st.spinner("Processing..."):
             try:
-                # Example simulated response
+                # Example API response (replace with your actual OpenAI API call)
                 answer = "You're taking metformin ."
 
-                # Remove source references
+                # Remove any source references
                 cleaned_answer = re.sub(r'【\d+:\d+†[^\】]+】', '', answer)
+
+                # Display the result
                 st.write(cleaned_answer)
 
             except OpenAIError as e:
@@ -43,9 +48,10 @@ if st.button("Send"):
             except Exception as e:
                 st.error(f"An unexpected error occurred: {e}")
 
-# Disclaimer centered
+# Disclaimer at the bottom
 st.markdown("""
 <div style='text-align: center; color: grey; margin-top: 30px;'>
     Pill-AI is not a substitute for professional medical advice.
 </div>
 """, unsafe_allow_html=True)
+
