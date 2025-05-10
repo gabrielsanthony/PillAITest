@@ -127,20 +127,9 @@ elif send and user_input:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# ✅ Sticky Footer Disclaimer
+# ✅ Inline, Centered Disclaimer Below Buttons
 st.markdown("""
-<style>
-.sticky-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background-color: #FF6600;
-    color: white;
-    text-align: center;
-    padding: 5px;
-}
-</style>
-<div class='sticky-footer'>
+<div style='text-align: center; color: #FF6600; font-size: 14px; margin-top: 20px;'>
     ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.
 </div>
 """, unsafe_allow_html=True)
