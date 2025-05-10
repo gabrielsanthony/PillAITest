@@ -8,55 +8,62 @@ import streamlit.components.v1 as components
 # Page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Header
+# Centered Logo as Header
 st.markdown("""
-<div style='
-    background-color: #FF6600;
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 20px;
-'>
-    Pill-AI Assistant
+<div style='text-align: center; margin-bottom: 20px;'>
+    <img src="pillai_logo.png" width="180">
 </div>
 """, unsafe_allow_html=True)
 
-# Logo
-st.image("pillai_logo.png", width=100)
+# Center Content Block for Mobile
+st.markdown("<div style='max-width: 600px; margin: auto;'>", unsafe_allow_html=True)
 
-# OpenAI setup
+# OpenAI Setup
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
-# Thread setup
+# Thread Setup
 if "thread_id" not in st.session_state:
     thread = openai.beta.threads.create()
     st.session_state.thread_id = thread.id
 
-# Input field and Send button
-user_input = st.text_input("Ask about a medicine...", key="manual_input")
-send = st.button("📤 Send")
+# Input field with character limit
+user_input = st.text_input(
+    "Ask about a medicine...",
+    key="manual_input",
+    placeholder="e.g. Can I take 2 paracetamol tablets?",
+    help="Type your medicine question here (Max 300 characters)"
+)
+send = st.button("📤 Send", use_container_width=True)
 
-# Determine final input source
-final_input = None
-if send:
-    final_input = st.session_state["manual_input"]
-#elif spoken_input and not st.session_state["manual_input"]:
-#    final_input = spoken_input
-  #  st.session_state["speech_capture"] = ""
+# Start Over Button
+if st.button("🔄 Start Over", use_container_width=True):
+    st.session_state.clear()
+    st.experimental_rerun()
 
-# Run assistant logic
-if final_input:
-    st.chat_message("user").write(final_input)
+# Character limit enforcement
+if send and len(user_input) > 300:
+    st.warning("⚠️ Please limit your question to 300 characters.")
+elif send and user_input:
+    # User Message Bubble
+    st.markdown(f"""
+    <div style='
+        background-color: #FF6600;
+        color: white;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px 0;
+        word-wrap: break-word;
+    '>
+        You: {user_input.strip()}
+    </div>
+    """, unsafe_allow_html=True)
 
     try:
         openai.beta.threads.messages.create(
             thread_id=st.session_state.thread_id,
             role="user",
-            content=final_input
+            content=user_input
         )
 
         with st.spinner("Pill-AI is thinking..."):
@@ -91,9 +98,21 @@ if final_input:
                 found_response = True
                 raw_text = getattr(msg.content[0], "text", msg.content[0]).value
                 clean_text = re.sub(r'【\\d+:\\d+†[^】]+】', '', raw_text)
-                st.chat_message("assistant").write(clean_text.strip())
 
-                # Voice output
+                # Assistant Message Bubble
+                st.markdown(f"""
+                <div style='
+                    background-color: #F1F1F1;
+                    border-radius: 10px;
+                    padding: 10px;
+                    margin: 10px 0;
+                    word-wrap: break-word;
+                '>
+                    Pill-AI: {clean_text.strip()}
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Optional voice output
                 components.html(f"""
                 <script>
                     var msg = new SpeechSynthesisUtterance("{clean_text.strip()}");
@@ -104,10 +123,30 @@ if final_input:
         if not found_response:
             st.warning("🤖 Assistant completed, but no message was returned.")
 
+        # Auto-scroll to bottom
+        components.html("<script>window.scrollTo(0, document.body.scrollHeight);</script>", height=0)
+
     except OpenAIError as e:
         st.error("⚠️ OpenAI API error occurred.")
         st.exception(e)
 
-# Footer disclaimer
-st.markdown("---")
-st.info("ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.")
+# Sticky Footer Disclaimer
+st.markdown("""
+<style>
+.sticky-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #FF6600;
+    color: white;
+    text-align: center;
+    padding: 5px;
+}
+</style>
+<div class='sticky-footer'>
+    ℹ️ Pill-AI is not a substitute for medical advice. Always consult your doctor or pharmacist.
+</div>
+""", unsafe_allow_html=True)
+
+# Close the centered content block
+st.markdown("</div>", unsafe_allow_html=True)
