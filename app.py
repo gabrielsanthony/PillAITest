@@ -1,63 +1,64 @@
-import os
+import streamlit as st
 import openai
+import os
 
-# Load your OpenAI API key (make sure it’s in the environment or config)
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# ✅ Set up OpenAI API key (from environment or Streamlit secrets)
+api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+if not api_key:
+    st.error("❌ OPENAI_API_KEY not set. Please set it as an environment variable or in Streamlit secrets.")
+    st.stop()
+openai.api_key = api_key
 
-# Initialize Assistant with retrieval only
-assistant = openai.beta.assistants.create(
-    name="Pill-AI",
-    instructions="""
-You are Pill-AI — a friendly, expert chatbot here to help people in New Zealand understand medicines clearly and safely.
+# ✅ Your existing OpenAI Assistant ID
+assistant_id = "asst_3xS1vLEMnQyFqNXLTblUdbWS"  # ← replace this with your real assistant ID from OpenAI
 
-🚫 Important:
-ONLY use information found in the provided files (embedded documents).
-Do NOT make up answers or pull information from the internet or external sources.
-If you cannot find the answer in the provided files, clearly say:
-→ “Sorry, I don’t have information on that in the provided resources.”
+# ✅ Streamlit page settings
+st.set_page_config(page_title="Pill-AI 💊", layout="centered")
+st.title("💊 Pill-AI — Your Medicine Helper")
 
-🌸 Your tone and style:
-Speak in plain, simple English — as if explaining to a 14-year-old with no science or health background.
-Be kind, concise, and clear — like a helpful pharmacist at a local New Zealand pharmacy.
-Avoid jargon (if you must use a technical term, explain it simply).
+st.markdown("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
-🚑 Medical caution:
-Never give personal medical advice.
-If the user asks for advice or uncertain details, remind them:
-→ “Please check with a pharmacist or your GP to be sure.”
+# ✅ User input
+user_question = st.text_input("Type your medicine question here:")
 
-🛑 Topic guardrails:
-If the user asks about topics unrelated to NZ medicines or health, politely redirect:
-→ “Sorry, I can only help with New Zealand medicine or health topics.”
-""",
-    tools=[{"type": "retrieval"}],  # Connects ONLY to your uploaded vector store
-    model="gpt-4-turbo"
-)
+if st.button("Ask Pill-AI"):
+    if not user_question.strip():
+        st.warning("⚠️ Please enter a question.")
+    else:
+        with st.spinner("💬 Pill-AI is thinking..."):
+            try:
+                # ✅ Create a new thread
+                thread = openai.beta.threads.create()
 
-# Create a thread for conversation
-thread = openai.beta.threads.create()
+                # ✅ Add user message to the thread
+                openai.beta.threads.messages.create(
+                    thread_id=thread.id,
+                    role="user",
+                    content=user_question
+                )
 
-# Example: sending a user question
-user_question = "What are the side effects of Panadol?"
+                # ✅ Run the assistant on the thread
+                run = openai.beta.threads.runs.create_and_poll(
+                    thread_id=thread.id,
+                    assistant_id=assistant_id
+                )
 
-# Send message
-openai.beta.threads.messages.create(
-    thread_id=thread.id,
-    role="user",
-    content=user_question
-)
+                # ✅ Retrieve the latest assistant reply
+                messages = openai.beta.threads.messages.list(thread_id=thread.id)
+                last_message = messages.data[0].content[0].text.value.strip()
 
-# Run the assistant (with retrieval ONLY)
-run = openai.beta.threads.runs.create_and_poll(
-    thread_id=thread.id,
-    assistant_id=assistant.id
-)
+                st.success(last_message)
 
-# Get the final response
-messages = list(openai.beta.threads.messages.list(thread_id=thread.id))
-answer = messages[-1].content[0].text.value
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
 
-# Print the answer
-print("Pill-AI Answer:")
-print(answer)
+# ✅ Disclaimer at the bottom
+st.markdown("""
+---
+<div style='text-align: center; color: grey;'>
+ℹ️ **Pill-AI** provides general medicine information only.  
+It is not a substitute for professional medical advice.  
+Please consult your pharmacist or GP for personal health questions.
+</div>
+""", unsafe_allow_html=True)
 
