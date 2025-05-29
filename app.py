@@ -1,66 +1,82 @@
 import streamlit as st
 import openai
-import re
 import os
+import re
 
 # Streamlit page setup
-st.set_page_config(page_title="Pill-AI 💊", page_icon="💊", layout="centered")
+st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# App header
-st.markdown("<h1 style='text-align: center;'>Pill-AI 💊</h1>", unsafe_allow_html=True)
+# Centered logo
+st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
+st.image("pillai_logo.png", width=200)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Load OpenAI API key
+api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("OpenAI API key is not configured.")
+    st.stop()
+
+client = openai.OpenAI(api_key=api_key)
+
+# Assistant & thread (use your pre-created assistant ID)
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
+
+# Store thread across Streamlit sessions
+if "thread_id" not in st.session_state:
+    thread = client.beta.threads.create()
+    st.session_state["thread_id"] = thread.id
+
+# Input box
+st.title("💊 Pill-AI — Your Medicine Helper")
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
-# OpenAI setup
-api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-assistant_id = st.secrets.get("OPENAI_ASSISTANT_ID") or os.getenv("OPENAI_ASSISTANT_ID")
+user_question = st.text_input("Type your medicine question here:")
 
-if not api_key or not assistant_id:
-    st.error("OpenAI API key or Assistant ID is missing. Please set them in Streamlit secrets or environment variables.")
-else:
-    client = openai.OpenAI(api_key=api_key)
+if st.button("Send"):
+    if not user_question.strip():
+        st.warning("Please enter a question.")
+    else:
+        with st.spinner("Thinking..."):
+            try:
+                # Add message to thread
+                client.beta.threads.messages.create(
+                    thread_id=st.session_state["thread_id"],
+                    role="user",
+                    content=user_question
+                )
 
-    user_question = st.text_input("Type your medicine question here:")
+                # Run assistant
+                run = client.beta.threads.runs.create(
+                    thread_id=st.session_state["thread_id"],
+                    assistant_id=ASSISTANT_ID
+                )
 
-    if st.button("Send"):
-        if user_question.strip() == "":
-            st.warning("Please enter a question.")
-        else:
-            with st.spinner("Processing..."):
-                try:
-                    thread = client.beta.threads.create()
-                    client.beta.threads.messages.create(
-                        thread_id=thread.id,
-                        role="user",
-                        content=user_question
-                    )
+                # Wait for completion
+                while True:
+                    run_status = client.beta.threads.runs.retrieve(thread_id=st.session_state["thread_id"], run_id=run.id)
+                    if run_status.status in ["completed", "failed"]:
+                        break
 
-                    run = client.beta.threads.runs.create(
-                        thread_id=thread.id,
-                        assistant_id=assistant_id
-                    )
+                if run_status.status == "completed":
+                    # Get the latest assistant message
+                    messages = client.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
+                    latest = messages.data[0]
+                    raw_answer = latest.content[0].text.value
 
-                    # Wait for run completion
-                    import time
-                    while True:
-                        status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-                        if status.status == "completed":
-                            break
-                        elif status.status in ["failed", "cancelled"]:
-                            st.error(f"Run {status.status}.")
-                            break
-                        time.sleep(1)
+                    # Strip citations like  
+                    cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
-                    messages = client.beta.threads.messages.list(thread_id=thread.id)
-                    answer = messages.data[0].content[0].text.value.strip()
+                    st.write(cleaned_answer)
+                else:
+                    st.error("Sorry, the assistant failed to complete the request.")
 
-                    # Remove citations like  
-                    cleaned_answer = re.sub(r'【\d+:\d+†[^\】]+】', '', answer)
-
-                    st.success(cleaned_answer)
-
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
 
 # Disclaimer
-st.markdown("<div style='text-align: center; color: grey; margin-top: 30px;'>Pill-AI is not a substitute for professional medical advice. Please consult a pharmacist or GP if unsure.</div>", unsafe_allow_html=True)
-
+st.markdown("""
+<div style='text-align: center; color: grey; margin-top: 30px;'>
+Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
+</div>
+""", unsafe_allow_html=True)
