@@ -1,76 +1,63 @@
-import streamlit as st
-import openai
-import chromadb
 import os
-import re
+import openai
 
-# Setup Streamlit page
-st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
+# Load your OpenAI API key (make sure it’s in the environment or config)
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
-st.image("pillai_logo.png", width=200)
-st.markdown("</div>", unsafe_allow_html=True)
+# Initialize Assistant with retrieval only
+assistant = openai.beta.assistants.create(
+    name="Pill-AI",
+    instructions="""
+You are Pill-AI — a friendly, expert chatbot here to help people in New Zealand understand medicines clearly and safely.
 
-# Load OpenAI API key
-api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-if api_key:
-    client = openai.OpenAI(api_key=api_key)
-else:
-    st.error("OpenAI API key is not configured.")
-    st.stop()
+🚫 Important:
+ONLY use information found in the provided files (embedded documents).
+Do NOT make up answers or pull information from the internet or external sources.
+If you cannot find the answer in the provided files, clearly say:
+→ “Sorry, I don’t have information on that in the provided resources.”
 
-# Connect to ChromaDB
-db_path = "/content/drive/MyDrive/chroma_db"  # adjust if needed
-chroma_client = chromadb.PersistentClient(path=db_path)
-collection = chroma_client.get_or_create_collection("medsafe_embeddings")
+🌸 Your tone and style:
+Speak in plain, simple English — as if explaining to a 14-year-old with no science or health background.
+Be kind, concise, and clear — like a helpful pharmacist at a local New Zealand pharmacy.
+Avoid jargon (if you must use a technical term, explain it simply).
 
-# Retrieval function
-def retrieve_top_chunks(query, top_k=5):
-    results = collection.query(query_texts=[query], n_results=top_k)
-    documents = results.get('documents', [[]])[0]
-    if not documents:
-        return None
-    return "\n\n".join(documents)
+🚑 Medical caution:
+Never give personal medical advice.
+If the user asks for advice or uncertain details, remind them:
+→ “Please check with a pharmacist or your GP to be sure.”
 
-# User input
-user_question = st.text_input("Type your medicine question here:")
+🛑 Topic guardrails:
+If the user asks about topics unrelated to NZ medicines or health, politely redirect:
+→ “Sorry, I can only help with New Zealand medicine or health topics.”
+""",
+    tools=[{"type": "retrieval"}],  # Connects ONLY to your uploaded vector store
+    model="gpt-4-turbo"
+)
 
-if st.button("Send"):
-    if user_question.strip() == "":
-        st.warning("Please enter a question.")
-    else:
-        with st.spinner("Processing..."):
-            context = retrieve_top_chunks(user_question)
-            if not context:
-                st.write("Sorry, I don’t have information on that.")
-            else:
-                try:
-                    system_prompt = (
-                        "You are Pill-AI — a friendly, expert chatbot designed to help people in New Zealand understand medicines clearly and safely.\n"
-                        "ONLY use the following extracted medicine information when answering the user’s question.\n"
-                        "If the information is not in the provided text, respond: 'Sorry, I don’t have information on that.'\n"
-                        "Speak simply, kindly, and clearly, like a helpful pharmacist.\n"
-                        "NEVER pull information from outside the provided context."
-                    )
+# Create a thread for conversation
+thread = openai.beta.threads.create()
 
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": system_prompt + f"\n\nExtracted context:\n{context}"},
-                            {"role": "user", "content": user_question}
-                        ],
-                        temperature=0.2
-                    )
+# Example: sending a user question
+user_question = "What are the side effects of Panadol?"
 
-                    answer = response.choices[0].message.content.strip()
-                    cleaned_answer = re.sub(r'【\d+:\d+†[^\】]+】', '', answer)
-                    st.write(cleaned_answer)
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+# Send message
+openai.beta.threads.messages.create(
+    thread_id=thread.id,
+    role="user",
+    content=user_question
+)
 
-# Disclaimer
-st.markdown("""
-<div style='text-align: center; color: grey; margin-top: 30px;'>
-    Pill-AI is not a substitute for professional medical advice. Always consult your pharmacist or GP.
-</div>
-""", unsafe_allow_html=True)
+# Run the assistant (with retrieval ONLY)
+run = openai.beta.threads.runs.create_and_poll(
+    thread_id=thread.id,
+    assistant_id=assistant.id
+)
+
+# Get the final response
+messages = list(openai.beta.threads.messages.list(thread_id=thread.id))
+answer = messages[-1].content[0].text.value
+
+# Print the answer
+print("Pill-AI Answer:")
+print(answer)
+
