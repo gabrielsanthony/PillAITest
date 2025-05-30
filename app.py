@@ -14,13 +14,15 @@ def get_base64_image(path):
         b64 = base64.b64encode(img_file.read()).decode()
     return f"data:image/png;base64,{b64}"
 
+# ✅ Get the encoded logo
+logo_base64 = get_base64_image("pillai_logo.png")
+
 st.markdown(f"""
 <div style='text-align: center; margin-bottom: 5px;'>
     <img src='{logo_base64}' width='200' style='margin-bottom: -15px;'>
     <h2 style='margin-top: 0px;'>Your Smart Medicine Assistant</h2>
 </div>
 """, unsafe_allow_html=True)
-
 
 # Load OpenAI API key
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -101,4 +103,3 @@ st.markdown("""
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
 </div>
 """, unsafe_allow_html=True)
-
