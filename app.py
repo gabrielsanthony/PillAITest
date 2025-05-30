@@ -32,10 +32,10 @@ st.title("💊 Pill-AI — Your Medicine Helper")
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
 # Language selector
-language = st.selectbox("Select your preferred language:", ["English", "Te Reo Māori"])
+language = st.selectbox("Select your preferred language for the answer:", ["English", "Te Reo Māori"])
 
 # User question input
-user_question = st.text_input("Type your medicine question here:")
+user_question = st.text_input("Type your medicine question here (in any language):")
 
 if st.button("Send"):
     if not user_question.strip():
@@ -46,7 +46,7 @@ if st.button("Send"):
                 # Add language instruction if Māori selected
                 language_instruction = ""
                 if language == "Te Reo Māori":
-                    language_instruction = " Please provide your answer in Te Reo Māori."
+                    language_instruction = " Please respond in Te Reo Māori."
 
                 # Add message to thread
                 client.beta.threads.messages.create(
