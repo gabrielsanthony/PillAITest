@@ -1,15 +1,16 @@
+
 import streamlit as st
 import openai
 import os
 import re
-from googletrans import Translator
-import time
 
-# Set Streamlit page config
+# Streamlit page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Translator setup
-translator = Translator()
+# Centered logo
+st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
+st.image("pillai_logo.png", width=200)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # Load OpenAI API key
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -17,21 +18,19 @@ if not api_key:
     st.error("OpenAI API key is not configured.")
     st.stop()
 
-openai.api_key = api_key
+client = openai.OpenAI(api_key=api_key)
 
-# Assistant ID
-ASSISTANT_ID = "your_assistant_id_here"
+# Assistant & thread (use your pre-created assistant ID)
+ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
-# Store thread across session
+# Store thread across Streamlit sessions
 if "thread_id" not in st.session_state:
-    thread = openai.beta.threads.create()
+    thread = client.beta.threads.create()
     st.session_state["thread_id"] = thread.id
 
-# Language toggle
-language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori"])
-
+# Input box
 st.title("💊 Pill-AI — Your Medicine Helper")
-st.write("Ask a medicine-related question below. Answers only come from Medsafe resources!")
+st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
 user_question = st.text_input("Type your medicine question here:")
 
@@ -41,47 +40,42 @@ if st.button("Send"):
     else:
         with st.spinner("Thinking..."):
             try:
-                openai.beta.threads.messages.create(
+                # Add message to thread
+                client.beta.threads.messages.create(
                     thread_id=st.session_state["thread_id"],
                     role="user",
                     content=user_question
                 )
 
-                run = openai.beta.threads.runs.create(
+                # Run assistant
+                run = client.beta.threads.runs.create(
                     thread_id=st.session_state["thread_id"],
                     assistant_id=ASSISTANT_ID
                 )
 
-                # Add timeout loop (max 20 sec)
-                for _ in range(20):
-                    run_status = openai.beta.threads.runs.retrieve(
-                        thread_id=st.session_state["thread_id"],
-                        run_id=run.id
-                    )
+                # Wait for completion
+                while True:
+                    run_status = client.beta.threads.runs.retrieve(thread_id=st.session_state["thread_id"], run_id=run.id)
                     if run_status.status in ["completed", "failed"]:
                         break
-                    time.sleep(1)
-                else:
-                    st.error("Timeout: Assistant did not respond.")
-                    st.stop()
 
                 if run_status.status == "completed":
-                    messages = openai.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
+                    # Get the latest assistant message
+                    messages = client.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
+
+                    # Strip citations like  
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
-                    if language == "Te Reo Māori":
-                        translated = translator.translate(cleaned_answer, dest='mi').text
-                        st.write(translated)
-                    else:
-                        st.write(cleaned_answer)
+                    st.write(cleaned_answer)
                 else:
-                    st.error("Assistant failed to complete the request.")
+                    st.error("Sorry, the assistant failed to complete the request.")
 
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
+# Disclaimer
 st.markdown("""
 <div style='text-align: center; color: grey; margin-top: 30px;'>
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
