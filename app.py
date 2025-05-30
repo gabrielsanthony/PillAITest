@@ -21,6 +21,7 @@ if not api_key:
     st.error("OpenAI API key is not configured.")
     st.stop()
 
+# Set OpenAI key (no need for client object)
 openai.api_key = api_key
 
 # Assistant ID (replace with your own)
@@ -36,7 +37,7 @@ language = st.radio("Choose language for the answer:", ["English", "Te Reo Māor
 
 # Input box
 st.title("💊 Pill-AI — Your Medicine Helper")
-st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
+st.write("Ask a medicine-related question below. Answers come only from loaded Medsafe resources!")
 
 user_question = st.text_input("Type your medicine question here:")
 
@@ -74,7 +75,7 @@ if st.button("Send"):
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
 
-                    # Strip citations like  
+                    # Strip citations
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
                     # Translate if needed
@@ -95,3 +96,4 @@ st.markdown("""
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
 </div>
 """, unsafe_allow_html=True)
+
