@@ -4,7 +4,7 @@ import os
 import re
 from googletrans import Translator
 
-# Set Streamlit page config
+# Streamlit page config
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
 # Translator setup
@@ -21,23 +21,17 @@ if not api_key:
     st.error("OpenAI API key is not configured.")
     st.stop()
 
-# Set OpenAI key (no need for client object)
 openai.api_key = api_key
 
-# Assistant ID (replace with your own)
+# Assistant ID (replace with your actual Assistant ID)
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
-
-# Store thread across Streamlit sessions
-if "thread_id" not in st.session_state:
-    thread = openai.beta.threads.create()
-    st.session_state["thread_id"] = thread.id
 
 # Language toggle
 language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori"])
 
-# Input box
+# Input section
 st.title("💊 Pill-AI — Your Medicine Helper")
-st.write("Ask a medicine-related question below. Answers come only from loaded Medsafe resources!")
+st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
 user_question = st.text_input("Type your medicine question here:")
 
@@ -47,6 +41,11 @@ if st.button("Send"):
     else:
         with st.spinner("Thinking..."):
             try:
+                # Create thread if not already created
+                if "thread_id" not in st.session_state:
+                    thread = openai.beta.threads.create()
+                    st.session_state["thread_id"] = thread.id
+
                 # Add user message
                 openai.beta.threads.messages.create(
                     thread_id=st.session_state["thread_id"],
@@ -75,10 +74,9 @@ if st.button("Send"):
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
 
-                    # Strip citations
+                    # Strip citations like  
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
-                    # Translate if needed
                     if language == "Te Reo Māori":
                         translated = translator.translate(cleaned_answer, dest='mi').text
                         st.write(translated)
@@ -96,4 +94,3 @@ st.markdown("""
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
 </div>
 """, unsafe_allow_html=True)
-
