@@ -2,15 +2,21 @@ import streamlit as st
 import openai
 import os
 import re
+import base64
 from deep_translator import GoogleTranslator
 
 # Set Streamlit page config
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
 # Centered logo with subtitle (tight spacing)
-st.markdown("""
+def get_base64_image(path):
+    with open(path, "rb") as img_file:
+        b64 = base64.b64encode(img_file.read()).decode()
+    return f"data:image/png;base64,{b64}"
+
+st.markdown(f"""
 <div style='text-align: center; margin-bottom: 5px;'>
-    <img src='pillai_logo.png' width='200' style='margin-bottom: -15px;'>
+    <img src='{logo_base64}' width='200' style='margin-bottom: -15px;'>
     <h2 style='margin-top: 0px;'>Your Smart Medicine Assistant</h2>
 </div>
 """, unsafe_allow_html=True)
