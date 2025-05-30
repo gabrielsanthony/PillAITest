@@ -10,6 +10,7 @@ st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 # Centered logo
 st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
 st.image("pillai_logo.png", width=200)
+st.markdown("<h2>Your Smart Medicine Helper</h2>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 # Load OpenAI API key
@@ -32,7 +33,6 @@ if "thread_id" not in st.session_state:
 language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori"])
 
 # Input box
-st.title("💊 Pill-AI — Your Medicine Helper")
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
 user_question = st.text_input("Type your medicine question here:")
