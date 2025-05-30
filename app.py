@@ -18,7 +18,7 @@ if not api_key:
     st.error("OpenAI API key is not configured.")
     st.stop()
 
-client = openai.OpenAI(api_key=api_key)
+openai.api_key = api_key
 translator = Translator()
 
 # Assistant & thread (use your pre-created assistant ID)
