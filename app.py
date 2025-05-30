@@ -7,11 +7,14 @@ from deep_translator import GoogleTranslator
 # Set Streamlit page config
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
 
-# Centered logo
-st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
-st.image("pillai_logo.png", width=200)
-st.markdown("<h2>Your Smart Medicine Helper</h2>", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+# Centered logo with subtitle (tight spacing)
+st.markdown("""
+<div style='text-align: center; margin-bottom: 10px;'>
+    <img src='pillai_logo.png' width='200' style='margin-bottom: 5px;'>
+    <h2 style='margin-top: 5px;'>Your Smart Medicine Assistant</h2>
+</div>
+""", unsafe_allow_html=True)
+
 
 # Load OpenAI API key
 api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
