@@ -4,8 +4,11 @@ import os
 import re
 from googletrans import Translator
 
-# Streamlit page setup
+# Set Streamlit page config
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
+
+# Translator setup
+translator = Translator()
 
 # Centered logo
 st.markdown("<div style='text-align: center; margin-bottom: 20px;'>", unsafe_allow_html=True)
@@ -19,27 +22,23 @@ if not api_key:
     st.stop()
 
 openai.api_key = api_key
-translator = Translator()
 
-# Assistant & thread (use your pre-created assistant ID)
+# Assistant ID (replace with your own)
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
 # Store thread across Streamlit sessions
 if "thread_id" not in st.session_state:
-    thread = client.beta.threads.create()
+    thread = openai.beta.threads.create()
     st.session_state["thread_id"] = thread.id
+
+# Language toggle
+language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori"])
 
 # Input box
 st.title("💊 Pill-AI — Your Medicine Helper")
-st.write("Ask a medicine-related question below. Answers come from Medsafe resources.")
+st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
-user_question = st.text_input("Type your medicine question here (English or Te Reo):")
-
-# Language selection
-language_option = st.radio(
-    "Select the language you want the answer in:",
-    ("English", "Te Reo Māori", "Both")
-)
+user_question = st.text_input("Type your medicine question here:")
 
 if st.button("Send"):
     if not user_question.strip():
@@ -47,22 +46,22 @@ if st.button("Send"):
     else:
         with st.spinner("Thinking..."):
             try:
-                # Add message to thread
-                client.beta.threads.messages.create(
+                # Add user message
+                openai.beta.threads.messages.create(
                     thread_id=st.session_state["thread_id"],
                     role="user",
                     content=user_question
                 )
 
                 # Run assistant
-                run = client.beta.threads.runs.create(
+                run = openai.beta.threads.runs.create(
                     thread_id=st.session_state["thread_id"],
                     assistant_id=ASSISTANT_ID
                 )
 
                 # Wait for completion
                 while True:
-                    run_status = client.beta.threads.runs.retrieve(
+                    run_status = openai.beta.threads.runs.retrieve(
                         thread_id=st.session_state["thread_id"],
                         run_id=run.id
                     )
@@ -70,32 +69,20 @@ if st.button("Send"):
                         break
 
                 if run_status.status == "completed":
-                    # Get the latest assistant message
-                    messages = client.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
+                    # Get latest assistant message
+                    messages = openai.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
 
-                    # Strip citations  
+                    # Strip citations like  
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
-                    if language_option == "English":
-                        st.subheader("🗣 English Answer")
+                    # Translate if needed
+                    if language == "Te Reo Māori":
+                        translated = translator.translate(cleaned_answer, dest='mi').text
+                        st.write(translated)
+                    else:
                         st.write(cleaned_answer)
-
-                    elif language_option == "Te Reo Māori":
-                        translation = translator.translate(cleaned_answer, src='en', dest='mi')
-                        maori_answer = translation.text
-                        st.subheader("🌿 Te Reo Māori Answer")
-                        st.write(maori_answer)
-
-                    else:  # Both
-                        translation = translator.translate(cleaned_answer, src='en', dest='mi')
-                        maori_answer = translation.text
-                        st.subheader("🗣 English Answer")
-                        st.write(cleaned_answer)
-                        st.subheader("🌿 Te Reo Māori Answer")
-                        st.write(maori_answer)
-
                 else:
                     st.error("Sorry, the assistant failed to complete the request.")
 
