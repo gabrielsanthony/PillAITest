@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import re
+from googletrans import Translator
 
 # Streamlit page setup
 st.set_page_config(page_title="Pill-AI", page_icon="💊", layout="centered")
@@ -18,24 +19,27 @@ if not api_key:
     st.stop()
 
 client = openai.OpenAI(api_key=api_key)
+translator = Translator()
 
-# Assistant ID
+# Assistant & thread (use your pre-created assistant ID)
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
-# Store thread across sessions
+# Store thread across Streamlit sessions
 if "thread_id" not in st.session_state:
     thread = client.beta.threads.create()
     st.session_state["thread_id"] = thread.id
 
-# Title and description
+# Input box
 st.title("💊 Pill-AI — Your Medicine Helper")
-st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
+st.write("Ask a medicine-related question below. Answers come from Medsafe resources.")
 
-# Language selector
-language = st.selectbox("Select your preferred language for the answer:", ["English", "Te Reo Māori"])
+user_question = st.text_input("Type your medicine question here (English or Te Reo):")
 
-# User question input
-user_question = st.text_input("Type your medicine question here (in any language):")
+# Language selection
+language_option = st.radio(
+    "Select the language you want the answer in:",
+    ("English", "Te Reo Māori", "Both")
+)
 
 if st.button("Send"):
     if not user_question.strip():
@@ -43,16 +47,11 @@ if st.button("Send"):
     else:
         with st.spinner("Thinking..."):
             try:
-                # Add language instruction if Māori selected
-                language_instruction = ""
-                if language == "Te Reo Māori":
-                    language_instruction = " Please respond in Te Reo Māori."
-
                 # Add message to thread
                 client.beta.threads.messages.create(
                     thread_id=st.session_state["thread_id"],
                     role="user",
-                    content=user_question + language_instruction
+                    content=user_question
                 )
 
                 # Run assistant
@@ -71,14 +70,32 @@ if st.button("Send"):
                         break
 
                 if run_status.status == "completed":
+                    # Get the latest assistant message
                     messages = client.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
 
-                    # Strip citations
+                    # Strip citations  
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
-                    st.write(cleaned_answer)
+                    if language_option == "English":
+                        st.subheader("🗣 English Answer")
+                        st.write(cleaned_answer)
+
+                    elif language_option == "Te Reo Māori":
+                        translation = translator.translate(cleaned_answer, src='en', dest='mi')
+                        maori_answer = translation.text
+                        st.subheader("🌿 Te Reo Māori Answer")
+                        st.write(maori_answer)
+
+                    else:  # Both
+                        translation = translator.translate(cleaned_answer, src='en', dest='mi')
+                        maori_answer = translation.text
+                        st.subheader("🗣 English Answer")
+                        st.write(cleaned_answer)
+                        st.subheader("🌿 Te Reo Māori Answer")
+                        st.write(maori_answer)
+
                 else:
                     st.error("Sorry, the assistant failed to complete the request.")
 
@@ -91,4 +108,3 @@ st.markdown("""
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
 </div>
 """, unsafe_allow_html=True)
-
