@@ -19,18 +19,22 @@ if not api_key:
 
 client = openai.OpenAI(api_key=api_key)
 
-# Assistant & thread (use your pre-created assistant ID)
+# Assistant ID
 ASSISTANT_ID = "asst_3xS1vLEMnQyFqNXLTblUdbWS"
 
-# Store thread across Streamlit sessions
+# Store thread across sessions
 if "thread_id" not in st.session_state:
     thread = client.beta.threads.create()
     st.session_state["thread_id"] = thread.id
 
-# Input box
+# Title and description
 st.title("💊 Pill-AI — Your Medicine Helper")
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
 
+# Language selector
+language = st.selectbox("Select your preferred language:", ["English", "Te Reo Māori"])
+
+# User question input
 user_question = st.text_input("Type your medicine question here:")
 
 if st.button("Send"):
@@ -39,11 +43,16 @@ if st.button("Send"):
     else:
         with st.spinner("Thinking..."):
             try:
+                # Add language instruction if Māori selected
+                language_instruction = ""
+                if language == "Te Reo Māori":
+                    language_instruction = " Please provide your answer in Te Reo Māori."
+
                 # Add message to thread
                 client.beta.threads.messages.create(
                     thread_id=st.session_state["thread_id"],
                     role="user",
-                    content=user_question
+                    content=user_question + language_instruction
                 )
 
                 # Run assistant
@@ -54,17 +63,19 @@ if st.button("Send"):
 
                 # Wait for completion
                 while True:
-                    run_status = client.beta.threads.runs.retrieve(thread_id=st.session_state["thread_id"], run_id=run.id)
+                    run_status = client.beta.threads.runs.retrieve(
+                        thread_id=st.session_state["thread_id"],
+                        run_id=run.id
+                    )
                     if run_status.status in ["completed", "failed"]:
                         break
 
                 if run_status.status == "completed":
-                    # Get the latest assistant message
                     messages = client.beta.threads.messages.list(thread_id=st.session_state["thread_id"])
                     latest = messages.data[0]
                     raw_answer = latest.content[0].text.value
 
-                    # Strip citations like  
+                    # Strip citations
                     cleaned_answer = re.sub(r'【[^】]*】', '', raw_answer).strip()
 
                     st.write(cleaned_answer)
@@ -80,3 +91,4 @@ st.markdown("""
 Pill-AI is not a substitute for professional medical advice. Always consult a pharmacist or GP.
 </div>
 """, unsafe_allow_html=True)
+
