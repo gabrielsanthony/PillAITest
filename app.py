@@ -20,7 +20,7 @@ logo_base64 = get_base64_image("pillai_logo.png")
 st.markdown(f"""
 <div style='text-align: center; margin-bottom: 10px;'>
     <img src='{logo_base64}' width='200' style='margin-bottom: 5px;'>
-    <h2 style='margin-top: 0px;'>Your Smart Medicine Assistant</h2>
+    <h2 style='margin-top: 0px; margin-bottom: 0px;'>Your Trusted Medicines Assistant</h2>
 </div>
 """, unsafe_allow_html=True)
 
