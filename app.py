@@ -40,7 +40,7 @@ if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = thread.id
 
 # Language toggle
-language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori"])
+language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori". "Samoan"])
 
 # Input box
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
@@ -87,6 +87,9 @@ if st.button("Send"):
                     # Translate if needed
                     if language == "Te Reo Māori":
                         translated = GoogleTranslator(source='auto', target='mi').translate(cleaned_answer)
+                        st.write(translated)
+                    elif language == "Samoan":
+                        translated = GoogleTranslator(source='auto', target='sm').translate(cleaned_answer)
                         st.write(translated)
                     else:
                         st.write(cleaned_answer)
