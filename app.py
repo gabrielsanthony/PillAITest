@@ -40,7 +40,7 @@ if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = thread.id
 
 # Language toggle
-language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori". "Samoan"])
+language = st.radio("Choose language for the answer:", ["English", "Te Reo Māori", "Samoan"])
 
 # Input box
 st.write("Ask a medicine-related question below. Remember, answers come only from loaded Medsafe resources!")
